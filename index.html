@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Steel Arena 2026</title>
+    <style>
+        :root { 
+            --neon-blue: #00d4ff; 
+            --neon-red: #ff2e2e; 
+            --bg-light: #d1d1d1;
+            --panel-dark: #1a1a1a;
+        }
+
+        body { 
+            margin: 0; 
+            background: var(--bg-light); 
+            color: #333; 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            height: 100vh; 
+            overflow: hidden; 
+            touch-action: none;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* TELA DE MENU */
+        #menu { 
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+            background: rgba(0, 0, 0, 0.9); 
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            z-index: 9999; 
+        }
+        
+        .menu-card { 
+            background: #fff; padding: 40px; border-radius: 20px; 
+            text-align: center; width: 300px; box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+        }
+        .hidden { display: none !important; }
+        
+        button { 
+            width: 100%; padding: 18px; margin: 10px 0; cursor: pointer; 
+            background: #333; color: white; border: none; font-weight: bold; 
+            border-radius: 10px; font-size: 16px; transition: 0.3s;
+        }
+        button:active { transform: scale(0.95); }
+        #startBtn { background: var(--neon-blue); color: #000; box-shadow: 0 0 20px rgba(0,212,255,0.4); }
+
+        /* JOGO E CANVAS */
+        #game-wrapper { display: none; flex-direction: column; height: 100vh; width: 100vw; }
+        
+        #game-container { 
+            flex: 1; position: relative; background: #eee; 
+            display: flex; align-items: center; justify-content: center; 
+            overflow: hidden;
+        }
+
+        /* Efeito de Vignette (Sombra nas bordas da tela) */
+        #game-container::after {
+            content: ""; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            box-shadow: inset 0 0 100px rgba(0,0,0,0.2); pointer-events: none;
+        }
+
+        canvas { 
+            width: 100%; height: 100%; object-fit: contain; 
+            background: #e0e0e0;
+        }
+        
+        #ui { 
+            position: absolute; top: 20px; width: 92%; 
+            display: flex; justify-content: space-between; 
+            font-weight: 900; color: #222; font-size: 24px; 
+            pointer-events: none; z-index: 10; text-shadow: 0 2px 4px rgba(255,255,255,0.5);
+        }
+
+        /* PAINEL DE CONTROLES PROFISSIONAL */
+        #controls-panel { 
+            height: 170px; background: var(--panel-dark); 
+            display: flex; align-items: center; justify-content: space-around; 
+            padding: 15px; border-top: 5px solid #333;
+        }
+
+        .joy-area { 
+            width: 120px; height: 120px; background: #222; 
+            border-radius: 50%; position: relative; border: 4px solid #444; 
+            box-shadow: inset 0 0 10px #000;
+        }
+        
+        .joy-stick { 
+            width: 55px; height: 55px; background: var(--neon-blue); 
+            border-radius: 50%; position: absolute; top: 32.5px; left: 32.5px; 
+            box-shadow: 0 5px 15px rgba(0,0,0,0.6); pointer-events: none;
+        }
+        
+        .action-btn { 
+            width: 100px; height: 100px; border-radius: 50%; border: none; 
+            color: white; font-weight: bold; font-size: 20px; 
+            text-transform: uppercase; user-select: none; transition: 0.1s;
+        }
+        
+        #jumpBtn { background: linear-gradient(145deg, #444, #222); border: 2px solid #555; }
+        #shootBtn { background: linear-gradient(145deg, #ff3333, #990000); border: 2px solid #ff6666; }
+    </style>
+</head>
+<body>
+
+    <div id="menu">
+        <div class="menu-card">
+            <h1 style="margin:0 0 10px 0; letter-spacing: -1px;">STEEL ARENA</h1>
+            <p style="color:#666; margin-bottom: 25px;">MULTIPLATER V2.0</p>
+            
+            <div id="mainOptions">
+                <button id="btnCreate">CRIAR SALA</button>
+                <button id="btnJoinMenu">ENTRAR EM SALA</button>
+            </div>
+
+            <div id="joinArea" class="hidden">
+                <input type="text" id="roomInput" placeholder="CÓDIGO" maxlength="4" style="width: 90%; margin-bottom: 10px; padding: 15px; border: 2px solid #ccc; border-radius: 10px; font-size: 24px;">
+                <button id="btnConfirmJoin" style="background: #222;">CONECTAR</button>
+            </div>
+
+            <div id="lobby" class="hidden">
+                <p style="margin:0; font-size: 14px;">CÓDIGO DA SALA</p>
+                <h2 id="roomCodeDisplay" style="color:var(--neon-blue); font-size:40px; margin: 10px 0;">----</h2>
+                <button id="startBtn" class="hidden">INICIAR PARTIDA</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="game-wrapper">
+        <div id="game-container">
+            <div id="ui">
+                <div>ROUND: <span id="roundVal" style="color: var(--neon-blue);">1</span></div>
+                <div>HP: <span id="hpVal" style="color: var(--neon-red);">100</span></div>
+            </div>
+            <canvas id="gameCanvas" width="800" height="400"></canvas>
+        </div>
+
+        <div id="controls-panel">
+            <div class="joy-area" id="joyBase">
+                <div class="joy-stick" id="joyStick"></div>
+            </div>
+            <button class="action-btn" id="jumpBtn">PULAR</button>
+            <button class="action-btn" id="shootBtn">FIRE</button>
+        </div>
+    </div>
+
+    <script type="module" src="game.js"></script>
+</body>
+</html>
