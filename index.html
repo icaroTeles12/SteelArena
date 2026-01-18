@@ -3,143 +3,82 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Steel Arena 2026</title>
+    <title>Steel Arena - Multiplayer</title>
     <style>
-        :root { 
-            --neon-blue: #00d4ff; 
-            --neon-red: #ff2e2e; 
-            --bg-light: #d1d1d1;
-            --panel-dark: #1a1a1a;
-        }
-
-        body { 
-            margin: 0; 
-            background: var(--bg-light); 
-            color: #333; 
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
-            height: 100vh; 
-            overflow: hidden; 
-            touch-action: none;
-            display: flex;
-            flex-direction: column;
-        }
-
-        /* TELA DE MENU */
-        #menu { 
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
-            background: rgba(0, 0, 0, 0.9); 
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            z-index: 9999; 
-        }
+        /* Estilos Base */
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: #111; font-family: 'Segoe UI', sans-serif; }
         
-        .menu-card { 
-            background: #fff; padding: 40px; border-radius: 20px; 
-            text-align: center; width: 300px; box-shadow: 0 20px 50px rgba(0,0,0,0.5);
-        }
+        /* Menu Inicial */
+        #menu { position: absolute; width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; background: radial-gradient(circle, #222 0%, #000 100%); z-index: 20; color: white; }
+        .btn { padding: 15px 30px; margin: 10px; border: none; border-radius: 8px; font-size: 1.2rem; cursor: pointer; transition: 0.3s; background: #00d4ff; color: #000; font-weight: bold; text-transform: uppercase; }
+        .btn-join { background: #ff2e2e; color: white; }
         .hidden { display: none !important; }
-        
-        button { 
-            width: 100%; padding: 18px; margin: 10px 0; cursor: pointer; 
-            background: #333; color: white; border: none; font-weight: bold; 
-            border-radius: 10px; font-size: 16px; transition: 0.3s;
-        }
-        button:active { transform: scale(0.95); }
-        #startBtn { background: var(--neon-blue); color: #000; box-shadow: 0 0 20px rgba(0,212,255,0.4); }
+        input { padding: 12px; border-radius: 5px; border: none; text-align: center; font-size: 1.2rem; margin-bottom: 10px; width: 150px; text-transform: uppercase; }
 
-        /* JOGO E CANVAS */
-        #game-wrapper { display: none; flex-direction: column; height: 100vh; width: 100vw; }
-        
-        #game-container { 
-            flex: 1; position: relative; background: #eee; 
-            display: flex; align-items: center; justify-content: center; 
-            overflow: hidden;
-        }
+        /* Container do Jogo */
+        #game-wrapper { position: relative; width: 100vw; height: 100vh; display: none; flex-direction: column; }
+        canvas { background: #eee; width: 100%; height: 60%; touch-action: none; border-bottom: 4px solid #333; }
 
-        /* Efeito de Vignette (Sombra nas bordas da tela) */
-        #game-container::after {
-            content: ""; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            box-shadow: inset 0 0 100px rgba(0,0,0,0.2); pointer-events: none;
+        /* Interface de Round e HP */
+        #ui-top { position: absolute; top: 10px; width: 100%; display: flex; justify-content: space-between; padding: 0 20px; box-sizing: border-box; color: #333; font-weight: bold; pointer-events: none; z-index: 5; }
+        .stat-box { background: rgba(255,255,255,0.8); padding: 5px 15px; border-radius: 20px; border: 2px solid #333; }
+
+        /* Tela de Transição de Round */
+        #roundOverlay { 
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
+            background: rgba(0,0,0,0.9); display: flex; flex-direction: column; 
+            align-items: center; justify-content: center; z-index: 100; 
+            color: white; text-align: center; font-family: 'Arial Black', sans-serif;
         }
 
-        canvas { 
-            width: 100%; height: 100%; object-fit: contain; 
-            background: #e0e0e0;
-        }
+        /* Controles Mobile */
+        #controls { height: 40%; background: #000; display: flex; align-items: center; justify-content: space-around; position: relative; }
+        #joyBase { width: 110px; height: 110px; background: rgba(255,255,255,0.1); border: 4px solid #444; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+        #joyStick { width: 45px; height: 45px; background: #00d4ff; border-radius: 50%; box-shadow: 0 0 15px #00d4ff; transition: transform 0.1s; }
         
-        #ui { 
-            position: absolute; top: 20px; width: 92%; 
-            display: flex; justify-content: space-between; 
-            font-weight: 900; color: #222; font-size: 24px; 
-            pointer-events: none; z-index: 10; text-shadow: 0 2px 4px rgba(255,255,255,0.5);
-        }
-
-        /* PAINEL DE CONTROLES PROFISSIONAL */
-        #controls-panel { 
-            height: 170px; background: var(--panel-dark); 
-            display: flex; align-items: center; justify-content: space-around; 
-            padding: 15px; border-top: 5px solid #333;
-        }
-
-        .joy-area { 
-            width: 120px; height: 120px; background: #222; 
-            border-radius: 50%; position: relative; border: 4px solid #444; 
-            box-shadow: inset 0 0 10px #000;
-        }
-        
-        .joy-stick { 
-            width: 55px; height: 55px; background: var(--neon-blue); 
-            border-radius: 50%; position: absolute; top: 32.5px; left: 32.5px; 
-            box-shadow: 0 5px 15px rgba(0,0,0,0.6); pointer-events: none;
-        }
-        
-        .action-btn { 
-            width: 100px; height: 100px; border-radius: 50%; border: none; 
-            color: white; font-weight: bold; font-size: 20px; 
-            text-transform: uppercase; user-select: none; transition: 0.1s;
-        }
-        
-        #jumpBtn { background: linear-gradient(145deg, #444, #222); border: 2px solid #555; }
-        #shootBtn { background: linear-gradient(145deg, #ff3333, #990000); border: 2px solid #ff6666; }
+        .action-btn { width: 85px; height: 85px; border-radius: 50%; border: none; color: white; font-weight: bold; font-size: 1rem; text-transform: uppercase; }
+        #jumpBtn { background: #555; box-shadow: 0 4px #222; }
+        #shootBtn { background: #ff2e2e; box-shadow: 0 0 15px #ff2e2e; }
+        #shootBtn:active { transform: scale(0.9); }
     </style>
 </head>
 <body>
 
     <div id="menu">
-        <div class="menu-card">
-            <h1 style="margin:0 0 10px 0; letter-spacing: -1px;">STEEL ARENA</h1>
-            <p style="color:#666; margin-bottom: 25px;">MULTIPLATER V2.0</p>
-            
-            <div id="mainOptions">
-                <button id="btnCreate">CRIAR SALA</button>
-                <button id="btnJoinMenu">ENTRAR EM SALA</button>
-            </div>
+        <h1 style="letter-spacing: 5px; color: #00d4ff;">STEEL ARENA</h1>
+        <div id="mainOptions">
+            <button class="btn" id="btnCreate">Criar Sala</button>
+            <button class="btn btn-join" id="btnJoinMenu">Entrar em Sala</button>
+        </div>
+        
+        <div id="joinArea" class="hidden">
+            <input type="text" id="roomInput" placeholder="CÓDIGO" maxlength="4">
+            <button class="btn btn-join" id="btnConfirmJoin">Confirmar</button>
+        </div>
 
-            <div id="joinArea" class="hidden">
-                <input type="text" id="roomInput" placeholder="CÓDIGO" maxlength="4" style="width: 90%; margin-bottom: 10px; padding: 15px; border: 2px solid #ccc; border-radius: 10px; font-size: 24px;">
-                <button id="btnConfirmJoin" style="background: #222;">CONECTAR</button>
-            </div>
-
-            <div id="lobby" class="hidden">
-                <p style="margin:0; font-size: 14px;">CÓDIGO DA SALA</p>
-                <h2 id="roomCodeDisplay" style="color:var(--neon-blue); font-size:40px; margin: 10px 0;">----</h2>
-                <button id="startBtn" class="hidden">INICIAR PARTIDA</button>
-            </div>
+        <div id="lobby" class="hidden">
+            <p>CÓDIGO DA SALA: <span id="roomCodeDisplay" style="color:#00d4ff; font-size: 2rem; font-weight: bold;">----</span></p>
+            <p id="lobbyStatus">Aguardando oponente...</p>
+            <button class="btn hidden" id="startBtn">INICIAR BATALHA</button>
         </div>
     </div>
 
     <div id="game-wrapper">
-        <div id="game-container">
-            <div id="ui">
-                <div>ROUND: <span id="roundVal" style="color: var(--neon-blue);">1</span></div>
-                <div>HP: <span id="hpVal" style="color: var(--neon-red);">100</span></div>
-            </div>
-            <canvas id="gameCanvas" width="800" height="400"></canvas>
+        <div id="ui-top">
+            <div class="stat-box">ROUND: <span id="roundVal">1</span>/3</div>
+            <div class="stat-box" style="color: #ff2e2e;">HP: <span id="hpVal">100</span></div>
+        </div>
+        
+        <canvas id="gameCanvas" width="800" height="400"></canvas>
+
+        <div id="roundOverlay" class="hidden">
+            <h1 id="winnerMsg" style="font-size: 3.5rem; margin: 0; text-shadow: 0 0 20px currentColor;">P1 VENCEU!</h1>
+            <h2 id="nextRoundMsg" style="color: #00d4ff; margin-top: 10px;">Preparando Round 2...</h2>
+            <p style="opacity: 0.5;">Aguarde o reset da arena</p>
         </div>
 
-        <div id="controls-panel">
-            <div class="joy-area" id="joyBase">
-                <div class="joy-stick" id="joyStick"></div>
-            </div>
+        <div id="controls">
+            <div id="joyBase"><div id="joyStick"></div></div>
             <button class="action-btn" id="jumpBtn">PULAR</button>
             <button class="action-btn" id="shootBtn">FIRE</button>
         </div>
